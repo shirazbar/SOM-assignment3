@@ -8,7 +8,11 @@ When the program is running, please follow its instructions.
 You can use the existing 'Elec_24.csv' file, or specify another filename/path having the same data format. 
 
 Output:
-Plot of the hexagon board of cells, numbered according to their ID and colored according to 'economy' feature weight.
+1. Plot of hexagon board of clusters, numbered according to their ID and colored according to 'economy' feature weight. 
+2. Table describing the cities in each cluster
+
+![image](https://user-images.githubusercontent.com/26282045/174262104-d573fb74-05e0-44a8-96b3-8a964212f130.png)
+
 
 You can also run the program using the full code with the following commands:
 >> pip install -r requirements.txt
