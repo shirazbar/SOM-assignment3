@@ -1,6 +1,5 @@
 """
 Created on June 2022
-
 @author: Shiraz Nave, Eden Meidan
 """
 
@@ -26,6 +25,8 @@ indices = None
 clusters = defaultdict(list) # cluster id : all samples belong to that cluster
 prev_clusters = None
 cluster_weights = {} # cluster id : vector of cell (center)
+
+history = {}
 
 # normalize vectors of the train and the test examples
 def normalization_min_max(input_elections):
@@ -100,7 +101,8 @@ def find_best_cell(vector, k=1):
 
 # updates the cluster's vectors
 # wi = wi + alpha *  (xi - wi)
-def update_weights(weights, sample, alpha, strength = 1):
+def update_weights(current_weights, sample, alpha, strength = 1):
+    weights = current_weights.copy()
     for i in range(len(weights)):
             weights[i] = weights[i] + (alpha * (sample[i] - weights[i]) * strength)
     return weights
@@ -197,7 +199,7 @@ try:
     print("Running 10 different attempts to find best solution...")
     for i in range(10):
         step = 0
-        #initialize()
+        history[i+1] = defaultdict(list)
         initialize(filename)
         clusters = defaultdict(list) # cluster id : all samples belong to that cluster
         prev_clusters = None
@@ -215,8 +217,10 @@ try:
                 dict_city_cluster_id[city] = best_cell
                 # update neighbors
                 update_neighbors_weight(hexes[best_cell], dict_city_vec[city], alpha)
+            for cluster, weights in cluster_weights.items():
+                history[i+1][cluster].append(weights[0])
             step += 1
-        solutions.append((total_error(), cluster_weights, clusters))
+        solutions.append((total_error(), cluster_weights.copy(), clusters.copy()))
         print("Execution number:", i+1, " Error Evaluation:", round(total_error(),4))
     best_error, best_clusters_weights, best_clusters = min(solutions)
     print("Best solution found with Error Evaluation:", round(best_error,4))
@@ -235,10 +239,6 @@ except:
     print("No such file. Please try again")
 
 #########################################################################################################
-
-
-
-
 
 
 
