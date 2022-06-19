@@ -26,8 +26,6 @@ clusters = defaultdict(list) # cluster id : all samples belong to that cluster
 prev_clusters = None
 cluster_weights = {} # cluster id : vector of cell (center)
 
-history = {}
-
 # normalize vectors of the train and the test examples
 def normalization_min_max(input_elections):
     norm_elections = [[]] * len(input_elections)
@@ -199,7 +197,6 @@ try:
     print("Running 10 different attempts to find best solution...")
     for i in range(10):
         step = 0
-        history[i+1] = defaultdict(list)
         initialize(filename)
         clusters = defaultdict(list) # cluster id : all samples belong to that cluster
         prev_clusters = None
@@ -217,8 +214,6 @@ try:
                 dict_city_cluster_id[city] = best_cell
                 # update neighbors
                 update_neighbors_weight(hexes[best_cell], dict_city_vec[city], alpha)
-            for cluster, weights in cluster_weights.items():
-                history[i+1][cluster].append(weights[0])
             step += 1
         solutions.append((total_error(), cluster_weights.copy(), clusters.copy()))
         print("Execution number:", i+1, " Error Evaluation:", round(total_error(),4))
