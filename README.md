@@ -11,7 +11,7 @@ Output:
 1. Plot of hexagon board of clusters, numbered according to their ID and colored according to 'economy' feature weight. 
 2. Table describing the cities in each cluster
 
-![image](https://user-images.githubusercontent.com/26282045/174262104-d573fb74-05e0-44a8-96b3-8a964212f130.png)
+<img width="416" alt="image" src="https://user-images.githubusercontent.com/26282045/174498334-a203147b-56d8-442b-a4e1-4e69b8e92a90.png">
 
 
 You can also run the program using the full code with the following commands:
