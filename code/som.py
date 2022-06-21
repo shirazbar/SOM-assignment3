@@ -12,12 +12,14 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 import matplotlib.cm as cm
 from tabulate import tabulate
+import math
 
 # Hyperparameters
 alpha = 0.3
 neighbors_impact = {"first": 0.7, "second": 0.3}
 
 # Globals
+radius = 5
 df = None
 dict_city_vec = None
 hexes = None
@@ -25,6 +27,8 @@ indices = None
 clusters = defaultdict(list) # cluster id : all samples belong to that cluster
 prev_clusters = None
 cluster_weights = {} # cluster id : vector of cell (center)
+max_vectors_distance = None
+max_cells_distance = None
 
 # normalize vectors of the train and the test examples
 def normalization_min_max(input_elections):
@@ -39,7 +43,6 @@ def normalization_min_max(input_elections):
 # creates hexagon of 61 cells around x,y,x axes 61 cells one per cluster - cluster_id 0:60
 def set_representation():
     global hexes, indices
-    radius = 5
     deltas = [[1,0,-1],[0,1,-1],[-1,1,0],[-1,0,1],[0,-1,1],[1,-1,0]]
     hexes = []
     indices = {}
@@ -69,11 +72,12 @@ def set_representation():
 
 # initializes data - inputs csv into df and dicts accordingly for easy acsess
 def initialize(filename):
-    global df, dict_city_vec, cluster_weights
+    global df, dict_city_vec, cluster_weights, max_vectors_distance, max_cells_distance
     df = pd.read_csv(filename) # import csv file in df
     df.iloc[:,1:] = normalization_min_max(df.iloc[:,1:].to_numpy()) # normilize df
     dict_city_vec = {}
     # vectors dict city : vector nums
+    sample = []
     for index, example in df.iterrows():
         city = example['Municipality']
         sample = example['Economic Cluster':'Tikva Hadasha']
@@ -83,6 +87,15 @@ def initialize(filename):
     random.shuffle(chosen_cities)
     for index in indices.values():
         cluster_weights[index] = dict_city_vec[chosen_cities[index]].copy()
+        # cluster_weights[index] = np.random.uniform(low=0.0, high=1.0, size=(len(sample),))
+    
+    max_vectors_distance = math.sqrt(1 * len(sample))
+    max_cells_distance = (radius * 2) - 2
+    
+
+def normalize_error(x, max_value):
+    return (x - 0) / (max_value - 0)
+
         
 # returns the cluster_id of the closest cluster to the vector of a city being checked
 def find_best_cell(vector, k=1):
@@ -169,21 +182,28 @@ def distance_error():
     for city, cluster_id in dict_city_cluster_id.items():
         city_vector = dict_city_vec[city]
         cluster_vector = cluster_weights[cluster_id]
-        avg_distance += np.linalg.norm(city_vector - cluster_vector)
+        avg_distance += normalize_error(np.linalg.norm(city_vector - cluster_vector), max_vectors_distance)
     avg_distance /= len(dict_city_cluster_id)
     return avg_distance
+
+def topological_distnace(coor1, coor2):
+    X, Y, Z = 0, 1, 2
+    return max([abs(coor1[X] - coor2[X]),
+                abs(coor1[Y] - coor2[Y]),
+                abs(coor1[Z] - coor2[Z])])
 
 # topology provides quality about the density of the map.
 def topological_error():
     avg = 0    
     for city, city_vec in dict_city_vec.items():
         best, second_best = find_best_cell(city_vec, k=2)
-        avg += np.linalg.norm(np.array(best) - np.array(second_best))
+        best_coor, second_best_coor = hexes[best], hexes[second_best]
+        avg += normalize_error(topological_distnace(best_coor, second_best_coor), max_cells_distance)
     avg /= len(dict_city_vec)
     return avg
 
 def total_error():
-    return 0.2*topological_error() + 0.8*distance_error()
+    return 0.5*topological_error() + 0.5*distance_error()
      
 # the program ########################################################################################## 
 
@@ -200,7 +220,8 @@ try:
         initialize(filename)
         clusters = defaultdict(list) # cluster id : all samples belong to that cluster
         prev_clusters = None
-        while clusters != prev_clusters and step < 70: # limit to 30 improvments
+        temp_alpha = alpha
+        while clusters != prev_clusters and temp_alpha > 0: # limit to 30 improvments
             prev_clusters = clusters
             clusters = defaultdict(list) # cluster id : all samples belong to that cluster
             cities_keys_different_order = list(dict_city_vec.keys())
@@ -210,13 +231,15 @@ try:
                 best_cell = find_best_cell(dict_city_vec[city])
                 clusters[best_cell].append(city)
                 # update cell vector
-                cluster_weights[best_cell] = update_weights(cluster_weights[best_cell], dict_city_vec[city], alpha)
+                cluster_weights[best_cell] = update_weights(cluster_weights[best_cell], dict_city_vec[city], temp_alpha)
                 dict_city_cluster_id[city] = best_cell
                 # update neighbors
-                update_neighbors_weight(hexes[best_cell], dict_city_vec[city], alpha)
+                update_neighbors_weight(hexes[best_cell], dict_city_vec[city], temp_alpha)
             step += 1
+            temp_alpha -= 0.005
         solutions.append((total_error(), cluster_weights.copy(), clusters.copy()))
         print("Execution number:", i+1, " Error Evaluation:", round(total_error(),4))
+
     best_error, best_clusters_weights, best_clusters = min(solutions)
     print("Best solution found with Error Evaluation:", round(best_error,4))
     print("Plot and clusters info below ...")
@@ -234,7 +257,6 @@ except:
     print("No such file. Please try again")
 
 #########################################################################################################
-
 
 
 
